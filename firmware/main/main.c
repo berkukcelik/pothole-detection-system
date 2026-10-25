@@ -3,7 +3,8 @@
 
 #define I2C_SDA_PIN 21 
 #define I2C_SCL_PIN 22
-
+#define MPU6050_ADDR 0x68 
+#define REG_WHO_AM_I  0x75
 
 static const char* TAG = "main"; 
 
@@ -18,14 +19,20 @@ void app_main(void){
     }; 
     i2c_master_bus_handle_t bus; 
     ESP_ERROR_CHECK(i2c_new_master_bus(&bus_config,&bus));
-    ESP_LOGI(TAG,"Scanning I2C bus"); 
-    
-    for (int addr = 1; addr < 127; addr++) {
-        if (i2c_master_probe(bus, addr, 50) == ESP_OK) {
-            ESP_LOGI(TAG, "Found device at 0x%02X", addr);
-        }
-    }
 
-    ESP_LOGI(TAG, "Scan done");
+    i2c_device_config_t dev_config = {
+        .dev_addr_length = I2C_ADDR_BIT_LEN_7, 
+        .device_address = MPU6050_ADDR,
+        .scl_speed_hz = 100000,
+    }; 
+
+    i2c_master_dev_handle_t mpu; 
+    ESP_ERROR_CHECK(i2c_master_bus_add_device(bus,&dev_config,&mpu));
+
+    uint8_t reg = REG_WHO_AM_I; 
+    uint8_t who_am_i = 0; 
+    ESP_ERROR_CHECK(i2c_master_transmit_receive(mpu, &reg, 1, &who_am_i, 1, 100));
+
+    ESP_LOGI(TAG, "WHO_AM_I = 0x%02X", who_am_i);
 
 }
