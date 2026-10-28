@@ -9,7 +9,7 @@
 #define REG_WHO_AM_I  0x75
 #define REG_PWR_MGMT_1 0x6B
 #define REG_ACCEL_XOUT_H 0x3B
-
+#define ACCEL_SCALE 16384.0f
 
 static const char* TAG = "main"; 
 
@@ -67,7 +67,11 @@ void app_main(void){
         int16_t ay = (int16_t)((data[2] << 8) | data[3]);
         int16_t az = (int16_t)((data[4] << 8) | data[5]);
 
-        ESP_LOGI(TAG, "ax=%6d  ay=%6d  az=%6d", ax, ay, az);
+        float ax_g = ax / ACCEL_SCALE; 
+        float ay_g = ay / ACCEL_SCALE; 
+        float az_g = az / ACCEL_SCALE; 
+
+        ESP_LOGI(TAG,"ax = %5.2f g ay = %5.2f g az = %5.2f",ax_g,ay_g,az_g);
         vTaskDelay(pdMS_TO_TICKS(200));
     }
 
