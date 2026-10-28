@@ -1,17 +1,22 @@
 #include "driver/i2c_master.h" 
 #include "esp_log.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 
 #define I2C_SDA_PIN 21 
 #define I2C_SCL_PIN 22
 #define MPU6050_ADDR 0x68 
 #define REG_WHO_AM_I  0x75
 #define REG_PWR_MGMT_1 0x6B
+#define REG_ACCEL_XOUT_H 0x3B
+
+
 static const char* TAG = "main"; 
 
 void app_main(void){
     i2c_master_bus_config_t bus_config = {
         .i2c_port = I2C_NUM_0,
-        .sda_io_num = I2C_SDA_PIN,
+        .sda_io_num =  I2C_SDA_PIN,
         .scl_io_num = I2C_SCL_PIN, 
         .clk_source = I2C_CLK_SRC_DEFAULT,
         .glitch_ignore_cnt = 7,
@@ -49,5 +54,21 @@ void app_main(void){
 
     ESP_ERROR_CHECK(i2c_master_transmit_receive(mpu, &reg, 1, &power, 1, 100));
     ESP_LOGI(TAG, "PWR_MGMT_1 after = 0x%02X", power);
+
+
+    //Read acceleration in a loop
+    uint8_t data[6];
+    reg = REG_ACCEL_XOUT_H;
+
+    while (1) {
+        ESP_ERROR_CHECK(i2c_master_transmit_receive(mpu, &reg, 1, data, 6, 100));
+
+        int16_t ax = (int16_t)((data[0] << 8) | data[1]);
+        int16_t ay = (int16_t)((data[2] << 8) | data[3]);
+        int16_t az = (int16_t)((data[4] << 8) | data[5]);
+
+        ESP_LOGI(TAG, "ax=%6d  ay=%6d  az=%6d", ax, ay, az);
+        vTaskDelay(pdMS_TO_TICKS(200));
+    }
 
 }
